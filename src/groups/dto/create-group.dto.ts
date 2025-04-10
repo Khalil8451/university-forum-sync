@@ -1,5 +1,3 @@
-import { UserDto } from '../../users/dto/user.dto';
-
 import {
   // decorators here
   IsString,
@@ -11,11 +9,6 @@ import {
   // decorators here
   ApiProperty,
 } from '@nestjs/swagger';
-
-import {
-  // decorators here
-  Type,
-} from 'class-transformer';
 
 export class CreateGroupDto {
   @ApiProperty({ example: 'ING-A2-01', required: true, type: String })

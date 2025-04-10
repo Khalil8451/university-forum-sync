@@ -34,7 +34,6 @@ describe('Users Module', () => {
           dateOfBirth: new Date('1990-01-01'),
           address: '123 User Street',
           phoneNumber: 22222222,
-          cin: '15156564',
         });
 
       await request(app)
@@ -105,11 +104,10 @@ describe('Users Module', () => {
             dateOfBirth: new Date('1990-01-01'),
             address: '123 User Street',
             phoneNumber: 22222222,
-            cin: '15156564',
             role: {
-              id: RoleEnum.student,
-              name: 'Student',
-              displayName: 'Student',
+              id: RoleEnum.admin,
+              name: 'Admin',
+              displayName: 'Administrator',
             },
             status: {
               id: StatusEnum.active,
@@ -153,7 +151,6 @@ describe('Users Module', () => {
             expect(body.data[0].dateOfBirth).toBeDefined();
             expect(body.data[0].address).toBeDefined();
             expect(body.data[0].phoneNumber).toBeDefined();
-            expect(body.data[0].cin).toBeDefined();
           });
       });
     });

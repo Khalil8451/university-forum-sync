@@ -19,6 +19,7 @@ import {
   ApiCreatedResponse,
   ApiOkResponse,
   ApiParam,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { Roles } from '../roles/roles.decorator';
@@ -35,6 +36,7 @@ import { User } from './domain/user';
 import { UsersService } from './users.service';
 import { RolesGuard } from '../roles/roles.guard';
 import { infinityPagination } from '../utils/infinity-pagination';
+import { UserRelationTypes } from './types/user.types';
 
 @ApiBearerAuth()
 @Roles(RoleEnum.admin)
@@ -76,6 +78,8 @@ export class UsersController {
       limit = 50;
     }
 
+    const relations = query?.relations?.split(',') as UserRelationTypes[];
+
     return infinityPagination(
       await this.usersService.findManyWithPagination({
         filterOptions: query?.filters,
@@ -83,6 +87,9 @@ export class UsersController {
         paginationOptions: {
           page,
           limit,
+        },
+        relationOptions: {
+          relations,
         },
       }),
       { page, limit },
@@ -102,8 +109,20 @@ export class UsersController {
     type: String,
     required: true,
   })
-  findOne(@Param('id') id: User['id']): Promise<NullableType<User>> {
-    return this.usersService.findById(id);
+  @ApiQuery({
+    name: 'relations',
+    type: String,
+    required: false,
+    example: 'role,status',
+  })
+  findOne(
+    @Param('id') id: User['id'],
+    @Query('relations') relations?: string,
+  ): Promise<NullableType<User>> {
+    const relationTypes = relations?.split(',') as UserRelationTypes[];
+    return this.usersService.findById(id, {
+      relations: relationTypes,
+    });
   }
 
   @ApiOkResponse({

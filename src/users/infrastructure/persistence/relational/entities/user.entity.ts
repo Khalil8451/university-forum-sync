@@ -1,3 +1,5 @@
+import { GroupEntity } from '../../../../../groups/infrastructure/persistence/relational/entities/group.entity';
+
 import {
   Column,
   CreateDateColumn,
@@ -9,6 +11,8 @@ import {
   UpdateDateColumn,
   JoinColumn,
   OneToOne,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { RoleEntity } from '../../../../../roles/infrastructure/persistence/relational/entities/role.entity';
 import { StatusEntity } from '../../../../../statuses/infrastructure/persistence/relational/entities/status.entity';
@@ -69,21 +73,27 @@ export class UserEntity extends EntityRelationalHelper {
   })
   phoneNumber?: number | null;
 
-  @OneToOne(() => FileEntity, {
-    eager: true,
-  })
+  @OneToOne(() => FileEntity)
   @JoinColumn()
   photo?: FileEntity | null;
 
-  @ManyToOne(() => RoleEntity, {
-    eager: true,
-  })
+  @ManyToOne(() => RoleEntity)
   role?: RoleEntity | null;
 
-  @ManyToOne(() => StatusEntity, {
-    eager: true,
-  })
+  @ManyToOne(() => StatusEntity)
   status?: StatusEntity;
+
+  @ManyToOne(() => GroupEntity, (group) => group.students, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  group: GroupEntity | null;
+
+  @ManyToMany(() => GroupEntity, (group) => group.instructors, {
+    nullable: true,
+  })
+  @JoinTable()
+  instructorGroups?: GroupEntity[] | null;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -40,7 +40,9 @@ export class AuthService {
   ) {}
 
   async validateLogin(loginDto: AuthEmailLoginDto): Promise<LoginResponseDto> {
-    const user = await this.usersService.findByEmail(loginDto.email);
+    const user = await this.usersService.findByEmail(loginDto.email, {
+      relations: ['role', 'status'],
+    });
 
     if (!user) {
       throw new UnprocessableEntityException({
@@ -117,14 +119,21 @@ export class AuthService {
     let userByEmail: NullableType<User> = null;
 
     if (socialEmail) {
-      userByEmail = await this.usersService.findByEmail(socialEmail);
+      userByEmail = await this.usersService.findByEmail(socialEmail, {
+        relations: ['role', 'status'],
+      });
     }
 
     if (socialData.id) {
-      user = await this.usersService.findBySocialIdAndProvider({
-        socialId: socialData.id,
-        provider: authProvider,
-      });
+      user = await this.usersService.findBySocialIdAndProvider(
+        {
+          socialId: socialData.id,
+          provider: authProvider,
+        },
+        {
+          relations: ['role', 'status'],
+        },
+      );
     }
 
     if (user) {
@@ -152,7 +161,9 @@ export class AuthService {
         status,
       });
 
-      user = await this.usersService.findById(user.id);
+      user = await this.usersService.findById(user.id, {
+        relations: ['role', 'status'],
+      });
     }
 
     if (!user) {
@@ -249,7 +260,9 @@ export class AuthService {
       });
     }
 
-    const user = await this.usersService.findById(userId);
+    const user = await this.usersService.findById(userId, {
+      relations: ['role', 'status'],
+    });
 
     if (
       !user ||
@@ -293,7 +306,9 @@ export class AuthService {
       });
     }
 
-    const user = await this.usersService.findById(userId);
+    const user = await this.usersService.findById(userId, {
+      relations: ['role', 'status'],
+    });
 
     if (!user) {
       throw new NotFoundException({
@@ -311,7 +326,9 @@ export class AuthService {
   }
 
   async forgotPassword(email: string): Promise<void> {
-    const user = await this.usersService.findByEmail(email);
+    const user = await this.usersService.findByEmail(email, {
+      relations: ['role', 'status'],
+    });
 
     if (!user) {
       throw new UnprocessableEntityException({
@@ -371,7 +388,9 @@ export class AuthService {
       });
     }
 
-    const user = await this.usersService.findById(userId);
+    const user = await this.usersService.findById(userId, {
+      relations: ['role', 'status'],
+    });
 
     if (!user) {
       throw new UnprocessableEntityException({
@@ -392,14 +411,18 @@ export class AuthService {
   }
 
   async me(userJwtPayload: JwtPayloadType): Promise<NullableType<User>> {
-    return this.usersService.findById(userJwtPayload.id);
+    return this.usersService.findById(userJwtPayload.id, {
+      relations: ['role', 'status'],
+    });
   }
 
   async update(
     userJwtPayload: JwtPayloadType,
     userDto: AuthUpdateDto,
   ): Promise<NullableType<User>> {
-    const currentUser = await this.usersService.findById(userJwtPayload.id);
+    const currentUser = await this.usersService.findById(userJwtPayload.id, {
+      relations: ['role', 'status'],
+    });
 
     if (!currentUser) {
       throw new UnprocessableEntityException({
@@ -450,7 +473,9 @@ export class AuthService {
     }
 
     if (userDto.email && userDto.email !== currentUser.email) {
-      const userByEmail = await this.usersService.findByEmail(userDto.email);
+      const userByEmail = await this.usersService.findByEmail(userDto.email, {
+        relations: ['role', 'status'],
+      });
 
       if (userByEmail && userByEmail.id !== currentUser.id) {
         throw new UnprocessableEntityException({
@@ -489,7 +514,9 @@ export class AuthService {
 
     await this.usersService.update(userJwtPayload.id, userDto);
 
-    return this.usersService.findById(userJwtPayload.id);
+    return this.usersService.findById(userJwtPayload.id, {
+      relations: ['role', 'status'],
+    });
   }
 
   async refreshToken(
@@ -510,7 +537,9 @@ export class AuthService {
       .update(randomStringGenerator())
       .digest('hex');
 
-    const user = await this.usersService.findById(session.user.id);
+    const user = await this.usersService.findById(session.user.id, {
+      relations: ['role', 'status'],
+    });
 
     if (!user?.role) {
       throw new UnauthorizedException();

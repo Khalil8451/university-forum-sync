@@ -17,11 +17,15 @@ import { IPaginationOptions } from '../utils/types/pagination-options';
 import { FileType } from '../files/domain/file';
 import { Role } from '../roles/domain/role';
 import { Status } from '../statuses/domain/status';
+import { Group } from '../groups/domain/group';
+import { GroupRepository } from '../groups/infrastructure/persistence/group.repository';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserRelationOptions } from './types/user.types';
 
 @Injectable()
 export class UsersService {
   constructor(
+    private readonly groupRepository: GroupRepository,
     private readonly usersRepository: UserRepository,
     private readonly filesService: FilesService,
   ) {}
@@ -29,7 +33,6 @@ export class UsersService {
   async create(createUserDto: CreateUserDto): Promise<User> {
     // Do not remove comment below.
     // <creating-property />
-
     let password: string | undefined = undefined;
 
     if (createUserDto.password) {
@@ -52,6 +55,23 @@ export class UsersService {
         });
       }
       email = createUserDto.email;
+    }
+
+    let cin: string | null = null;
+
+    if (createUserDto.cin) {
+      const userObject = await this.usersRepository.findByCin(
+        createUserDto.cin,
+      );
+      if (userObject) {
+        throw new UnprocessableEntityException({
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+          errors: {
+            cin: 'CinAlreadyExists',
+          },
+        });
+      }
+      cin = createUserDto.cin;
     }
 
     let photo: FileType | null | undefined = undefined;
@@ -113,17 +133,49 @@ export class UsersService {
       };
     }
 
+    let instructorGroups: Group[] | null | undefined = undefined;
+
+    if (createUserDto.instructorGroups) {
+      const instructorGroupsObjects = await this.groupRepository.findByIds(
+        createUserDto.instructorGroups.map((entity) => entity.id),
+      );
+      if (
+        instructorGroupsObjects.length !== createUserDto.instructorGroups.length
+      ) {
+        throw new UnprocessableEntityException({
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+          errors: {
+            instructorGroups: 'notExists',
+          },
+        });
+      }
+      instructorGroups = instructorGroupsObjects;
+    } else if (createUserDto.instructorGroups === null) {
+      instructorGroups = null;
+    }
+
+    let group: Group | null | undefined = undefined;
+
+    if (createUserDto.group) {
+      const groupObject = await this.groupRepository.findById(
+        createUserDto.group.id,
+      );
+      if (!groupObject) {
+        throw new UnprocessableEntityException({
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+          errors: {
+            group: 'notExists',
+          },
+        });
+      }
+      group = groupObject;
+    } else if (createUserDto.group === null) {
+      group = null;
+    }
+
     return this.usersRepository.create({
       // Do not remove comment below.
       // <creating-property-payload />
-      dateOfBirth: createUserDto.dateOfBirth,
-
-      address: createUserDto.address,
-
-      phoneNumber: createUserDto.phoneNumber,
-
-      cin: createUserDto.cin,
-
       firstName: createUserDto.firstName,
       lastName: createUserDto.lastName,
       email: email,
@@ -133,6 +185,12 @@ export class UsersService {
       status: status,
       provider: createUserDto.provider ?? AuthProvidersEnum.email,
       socialId: createUserDto.socialId,
+      group,
+      instructorGroups,
+      dateOfBirth: createUserDto.dateOfBirth,
+      address: createUserDto.address,
+      phoneNumber: createUserDto.phoneNumber,
+      cin: cin,
     });
   }
 
@@ -140,41 +198,59 @@ export class UsersService {
     filterOptions,
     sortOptions,
     paginationOptions,
+    relationOptions,
   }: {
     filterOptions?: FilterUserDto | null;
     sortOptions?: SortUserDto[] | null;
     paginationOptions: IPaginationOptions;
+    relationOptions?: UserRelationOptions;
   }): Promise<User[]> {
     return this.usersRepository.findManyWithPagination({
       filterOptions,
       sortOptions,
       paginationOptions,
+      relationOptions,
     });
   }
 
-  findById(id: User['id']): Promise<NullableType<User>> {
-    return this.usersRepository.findById(id);
+  findById(
+    id: User['id'],
+    relationOptions?: UserRelationOptions,
+  ): Promise<NullableType<User>> {
+    return this.usersRepository.findById(id, relationOptions);
   }
 
-  findByIds(ids: User['id'][]): Promise<User[]> {
-    return this.usersRepository.findByIds(ids);
+  findByIds(
+    ids: User['id'][],
+    relationOptions?: UserRelationOptions,
+  ): Promise<User[]> {
+    return this.usersRepository.findByIds(ids, relationOptions);
   }
 
-  findByEmail(email: User['email']): Promise<NullableType<User>> {
-    return this.usersRepository.findByEmail(email);
+  findByEmail(
+    email: User['email'],
+    relationOptions?: UserRelationOptions,
+  ): Promise<NullableType<User>> {
+    return this.usersRepository.findByEmail(email, relationOptions);
   }
 
-  findBySocialIdAndProvider({
-    socialId,
-    provider,
-  }: {
-    socialId: User['socialId'];
-    provider: User['provider'];
-  }): Promise<NullableType<User>> {
-    return this.usersRepository.findBySocialIdAndProvider({
+  findBySocialIdAndProvider(
+    {
       socialId,
       provider,
-    });
+    }: {
+      socialId: User['socialId'];
+      provider: User['provider'];
+    },
+    relationOptions?: UserRelationOptions,
+  ): Promise<NullableType<User>> {
+    return this.usersRepository.findBySocialIdAndProvider(
+      {
+        socialId,
+        provider,
+      },
+      relationOptions,
+    );
   }
 
   async update(
@@ -183,7 +259,6 @@ export class UsersService {
   ): Promise<User | null> {
     // Do not remove comment below.
     // <updating-property />
-
     let password: string | undefined = undefined;
 
     if (updateUserDto.password) {
@@ -214,6 +289,27 @@ export class UsersService {
       email = updateUserDto.email;
     } else if (updateUserDto.email === null) {
       email = null;
+    }
+
+    let cin: string | null | undefined = undefined;
+
+    if (updateUserDto.cin) {
+      const userObject = await this.usersRepository.findByCin(
+        updateUserDto.cin,
+      );
+
+      if (userObject && userObject.id !== id) {
+        throw new UnprocessableEntityException({
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+          errors: {
+            cin: 'cinAlreadyExists',
+          },
+        });
+      }
+
+      cin = updateUserDto.cin;
+    } else if (updateUserDto.cin === null) {
+      cin = null;
     }
 
     let photo: FileType | null | undefined = undefined;
@@ -275,17 +371,48 @@ export class UsersService {
       };
     }
 
+    let instructorGroups: Group[] | null | undefined = undefined;
+
+    if (updateUserDto.instructorGroups) {
+      const instructorGroupsObjects = await this.groupRepository.findByIds(
+        updateUserDto.instructorGroups.map((entity) => entity.id),
+      );
+      if (
+        instructorGroupsObjects.length !== updateUserDto.instructorGroups.length
+      ) {
+        throw new UnprocessableEntityException({
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+          errors: {
+            instructorGroups: 'notExists',
+          },
+        });
+      }
+      instructorGroups = instructorGroupsObjects;
+    } else if (updateUserDto.instructorGroups === null) {
+      instructorGroups = null;
+    }
+
+    let group: Group | null | undefined = undefined;
+
+    if (updateUserDto.group) {
+      const groupObject = await this.groupRepository.findById(
+        updateUserDto.group.id,
+      );
+      if (!groupObject) {
+        throw new UnprocessableEntityException({
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+          errors: {
+            group: 'notExists',
+          },
+        });
+      }
+      group = groupObject;
+    } else if (updateUserDto.group === null) {
+      group = null;
+    }
     return this.usersRepository.update(id, {
       // Do not remove comment below.
       // <updating-property-payload />
-      dateOfBirth: updateUserDto.dateOfBirth,
-
-      address: updateUserDto.address,
-
-      phoneNumber: updateUserDto.phoneNumber,
-
-      cin: updateUserDto.cin,
-
       firstName: updateUserDto.firstName,
       lastName: updateUserDto.lastName,
       email,
@@ -295,6 +422,12 @@ export class UsersService {
       status,
       provider: updateUserDto.provider,
       socialId: updateUserDto.socialId,
+      group,
+      instructorGroups,
+      dateOfBirth: updateUserDto.dateOfBirth,
+      address: updateUserDto.address,
+      phoneNumber: updateUserDto.phoneNumber,
+      cin,
     });
   }
 

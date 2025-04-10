@@ -1,3 +1,4 @@
+import { Group } from '../../groups/domain/group';
 import { Exclude, Expose } from 'class-transformer';
 import { FileType } from '../../files/domain/file';
 import { Role } from '../../roles/domain/role';
@@ -7,30 +8,6 @@ import { ApiProperty } from '@nestjs/swagger';
 const idType = Number;
 
 export class User {
-  @ApiProperty({
-    type: () => Date,
-    nullable: true,
-  })
-  dateOfBirth?: Date | null;
-
-  @ApiProperty({
-    type: () => String,
-    nullable: true,
-  })
-  address?: string | null;
-
-  @ApiProperty({
-    type: () => Number,
-    nullable: true,
-  })
-  phoneNumber?: number | null;
-
-  @ApiProperty({
-    type: () => String,
-    nullable: true,
-  })
-  cin?: string | null;
-
   @ApiProperty({
     type: idType,
   })
@@ -86,6 +63,42 @@ export class User {
     type: () => Status,
   })
   status?: Status;
+
+  @ApiProperty({
+    type: () => Group,
+    nullable: true,
+  })
+  group?: Group | null;
+
+  @ApiProperty({
+    type: () => [Group],
+    nullable: true,
+  })
+  instructorGroups?: Group[] | null;
+
+  @ApiProperty({
+    type: () => Date,
+    nullable: true,
+  })
+  dateOfBirth?: Date | null;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+  })
+  address?: string | null;
+
+  @ApiProperty({
+    type: () => Number,
+    nullable: true,
+  })
+  phoneNumber?: number | null;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+  })
+  cin?: string | null;
 
   @ApiProperty()
   createdAt: Date;

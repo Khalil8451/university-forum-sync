@@ -1,4 +1,5 @@
 import { FileEntity } from '../../../../../files/infrastructure/persistence/relational/entities/file.entity';
+import { GroupMapper } from '../../../../../groups/infrastructure/persistence/relational/mappers/group.mapper';
 
 import { FileMapper } from '../../../../../files/infrastructure/persistence/relational/mappers/file.mapper';
 import { RoleEntity } from '../../../../../roles/infrastructure/persistence/relational/entities/role.entity';
@@ -9,14 +10,6 @@ import { UserEntity } from '../entities/user.entity';
 export class UserMapper {
   static toDomain(raw: UserEntity): User {
     const domainEntity = new User();
-    domainEntity.dateOfBirth = raw.dateOfBirth;
-
-    domainEntity.address = raw.address;
-
-    domainEntity.phoneNumber = raw.phoneNumber;
-
-    domainEntity.cin = raw.cin;
-
     domainEntity.id = raw.id;
     domainEntity.email = raw.email;
     domainEntity.password = raw.password;
@@ -29,6 +22,22 @@ export class UserMapper {
     }
     domainEntity.role = raw.role;
     domainEntity.status = raw.status;
+    if (raw.group) {
+      domainEntity.group = GroupMapper.toDomain(raw.group);
+    } else if (raw.group === null) {
+      domainEntity.group = null;
+    }
+    if (raw.instructorGroups) {
+      domainEntity.instructorGroups = raw.instructorGroups.map((item) =>
+        GroupMapper.toDomain(item),
+      );
+    } else if (raw.instructorGroups === null) {
+      domainEntity.instructorGroups = null;
+    }
+    domainEntity.dateOfBirth = raw.dateOfBirth;
+    domainEntity.address = raw.address;
+    domainEntity.phoneNumber = raw.phoneNumber;
+    domainEntity.cin = raw.cin;
     domainEntity.createdAt = raw.createdAt;
     domainEntity.updatedAt = raw.updatedAt;
     domainEntity.deletedAt = raw.deletedAt;
@@ -61,14 +70,19 @@ export class UserMapper {
     }
 
     const persistenceEntity = new UserEntity();
-    persistenceEntity.dateOfBirth = domainEntity.dateOfBirth;
+    if (domainEntity.group) {
+      persistenceEntity.group = GroupMapper.toPersistence(domainEntity.group);
+    } else if (domainEntity.group === null) {
+      persistenceEntity.group = null;
+    }
 
-    persistenceEntity.address = domainEntity.address;
-
-    persistenceEntity.phoneNumber = domainEntity.phoneNumber;
-
-    persistenceEntity.cin = domainEntity.cin;
-
+    if (domainEntity.instructorGroups) {
+      persistenceEntity.instructorGroups = domainEntity.instructorGroups.map(
+        (item) => GroupMapper.toPersistence(item),
+      );
+    } else if (domainEntity.instructorGroups === null) {
+      persistenceEntity.instructorGroups = null;
+    }
     if (domainEntity.id && typeof domainEntity.id === 'number') {
       persistenceEntity.id = domainEntity.id;
     }
@@ -81,6 +95,10 @@ export class UserMapper {
     persistenceEntity.photo = photo;
     persistenceEntity.role = role;
     persistenceEntity.status = status;
+    persistenceEntity.dateOfBirth = domainEntity.dateOfBirth;
+    persistenceEntity.address = domainEntity.address;
+    persistenceEntity.phoneNumber = domainEntity.phoneNumber;
+    persistenceEntity.cin = domainEntity.cin;
     persistenceEntity.createdAt = domainEntity.createdAt;
     persistenceEntity.updatedAt = domainEntity.updatedAt;
     persistenceEntity.deletedAt = domainEntity.deletedAt;
